@@ -37,68 +37,73 @@ def main():
     for k, v in groupby(teams, lambda x: x['group']):
         groups[k] = list(v)
 
-    # print(groups)
+    # Dict to keep track of winner counts
+    counts = {}
 
-    # List to store knock off phase teams
-    knockoff_teams = []
+    # Simulate N tournaments (group phase + knock-off) to find 1 winner
+    for i in range(N):
+        
+        # List to store knock off phase teams
+        knockoff_teams = list(range(int(len(teams) / 2)))
+        
+        # Keep index of Group for team position in knockoff teams list (list must be in right order)
+        group_index = 0
 
-    # Keep index of Group for team position in knockoff teams list (list must be in right order)
-    group_index = 0
-    knockoff_teams = list(range(int(len(teams) / 2)))
-
-    # Simulate N groups phase and select most likely 1st and 2nd of each group
-    for group in groups:
-        group_counts = {}
-        for i in range(N):
+        for group in groups:
+            # group_counts = {}
+            # for i in range(N):
             first_place = simulate_group(groups[group])[0]
             second_place = simulate_group(groups[group])[1]
-            # Add 1st and 2nd places to counts dict
-            if first_place in group_counts:
-                group_counts[first_place] += 1
-            else:
-                group_counts[first_place] = 1
-            if second_place in group_counts:
-                group_counts[second_place] += 1
-            else:
-                group_counts[second_place] = 1
+            # # Add 1st and 2nd places to counts dict
+            # if first_place in group_counts:
+            #     group_counts[first_place] += 1
+            # else:
+            #     group_counts[first_place] = 1
+            # if second_place in group_counts:
+            #     group_counts[second_place] += 1
+            # else:
+            #     group_counts[second_place] = 1
 
-        top_two = sorted(
-            group_counts, key=lambda team: group_counts[team], reverse=True)[0:2]
-        # print(top_two)
+            # top_two = sorted(
+            #     group_counts, key=lambda team: group_counts[team], reverse=True)[0:2]
+            # print(top_two)
 
-        # Order of teams in knockoff_teams list must be:
-        # list =  [1A, 2B, 1B, 2A, 1C, 2D, 1D, 2C, 1E, 2F, 1F, 2E, 1G, 2H, 1H, 2G]
-        # index    0   1   2   3   4   5   6   7   8   9   10  11  12  13  14  15
-        # gr_i*2 = 0   2   2   0   4   6   6   4   8   10  10  8   12  14  14  12
-        # group_i  0   1   1   0   2   3   3   2   4   5   5   4   6   7   7   6
-        # The first place location in the list always matches group_index * 2
-        # For the second place, the easy solution is to store the correct locations in a list
-        loc_second = [3, 1, 7, 5, 11, 9, 15, 13]
+            # Order of teams in knockoff_teams list must be:
+            # list =  [1A, 2B, 1C, 2D, 1E, 2F, 1G, 2H, 1B, 2A, 1D, 2C, 1F, 2E, 1H, 2G]
+            # index    0   1   2   3   4   5   6   7   8   9   10  11  12  13  14  15
+            # group_i  0   1   2   3   4   5   6   7   1   0   3   2   5   4   7   6
+            # The easy solution is to store the correct locations in two lists
+            loc_first = [0, 8, 2, 10, 4, 12, 6, 14]
+            loc_second = [9, 1, 11, 3, 13, 5, 15, 7]
 
-        for i in range(len(teams)):
-            if teams[i]['team'] == top_two[0]:
-                knockoff_teams[group_index*2] = teams[i]
-            elif teams[i]['team'] == top_two[1]:
-                knockoff_teams[loc_second[group_index]] = teams[i]
+            # Loop through list of teams and place 1st and 2nd in the knock0ff_teams list
+            # for i in range(len(teams)):
+            #     if teams[i]['team'] == top_two[0]:
+            #         knockoff_teams[loc_first[group_index]] = teams[i]
+            #     elif teams[i]['team'] == top_two[1]:
+            #         knockoff_teams[loc_second[group_index]] = teams[i]
 
-        # Increase index for next group
-        group_index += 1
+            # Place first and second places in the correct location of the knockoff_teams list
+            knockoff_teams[loc_first[group_index]] = first_place
+            knockoff_teams[loc_second[group_index]] = second_place
 
-    # print(knockoff_teams)
+            # Increase index for next group
+            group_index += 1
 
-    knockoff_counts = {}
-    # Simulate N knock-off phases and keep track of win counts
-    for i in range(N):
+        # print(knockoff_teams)
+
+        # Simulate knock-off phase
         winner = simulate_tournament(knockoff_teams)
+
         # Add winner to counts dict
-        if winner in knockoff_counts:
-            knockoff_counts[winner] += 1
+        if winner in counts:
+            counts[winner] += 1
         else:
-            knockoff_counts[winner] = 1
+            counts[winner] = 1
 
     # Print each team's chances of winning, according to simulation
-    for team in sorted(knockoff_counts, key=lambda team: knockoff_counts[team], reverse=True):
-        print(f"{team}: {knockoff_counts[team] * 100 / N:.1f}% chance of winning")
+    for team in sorted(counts, key=lambda team: counts[team], reverse=True):
+        print(f"{team}: {counts[team] * 100 / N:.1f}% chance of winning")
 
 
 def simulate_game(team1, team2):
@@ -156,7 +161,7 @@ def simulate_group(teams):
                 second_place = team
 
     # print(f"Results {first_place}, {second_place}")
-    return [first_place['team'], second_place['team']]
+    return [first_place, second_place]
 
 
 def simulate_round(teams):
